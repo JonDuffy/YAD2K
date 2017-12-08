@@ -256,7 +256,7 @@ def train(model, class_names, anchors, image_data, boxes, detectors_mask, matchi
               callbacks=[logging])
     model.save_weights('trained_stage_1.h5')
 
-    model_body, model = create_model(anchors, class_names, load_pretrained=False, freeze_body=False)
+    model_body, model = create_model(anchors, class_names, load_pretrained=True, freeze_body=False)
 
     model.load_weights('trained_stage_1.h5')
 

@@ -7,6 +7,11 @@
 images/*
 images/out/*
 model_data/*_anchors.txt
+output_images
+test.tar
+train.tar
+cleaned_images/*
+
 
 # Tensorboard training logs
 logs/
