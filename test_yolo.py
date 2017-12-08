@@ -83,6 +83,7 @@ def _main(args):
     num_anchors = len(anchors)
     # TODO: Assumes dim ordering is channel last
     model_output_channels = yolo_model.layers[-1].output_shape[-1]
+    print('num_classes: {}    num_anchors= {}     modeloutputchannels: {}'.format(num_classes,num_anchors,model_output_channels))
     assert model_output_channels == num_anchors * (num_classes + 5), \
         'Mismatch between model and given anchor and class sizes. ' \
         'Specify matching anchors and classes with --anchors_path and ' \
