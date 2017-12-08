@@ -11,8 +11,12 @@ output_images
 test.tar
 train.tar
 cleaned_images/*
+test/
+train/
 
 
+# numpy arrays for training
+numpy_arrays/
 # Tensorboard training logs
 logs/
 
