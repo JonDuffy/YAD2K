@@ -52,6 +52,39 @@ parser.add_argument(
     help='threshold for non max suppression IOU, default .5',
     default=.5)
 
+def get_pixels_for_each_class(image_boxes, image):
+        """
+        Takes all the box co-ordinates for an image
+        returns every pixel value keyed by class
+        """
+
+        classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog" ,"horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+
+        pixel_classes = {}
+
+        for class_name in classes:
+
+            all_pixels_in_class = []
+
+            for box in image_boxes:
+
+                if class_name in box[0]:
+                    y_1 = box[1][1]
+                    y_2 = box[2][1]
+                    x_1 = box[1][0]
+                    x_2 = box[2][0]
+                    for j in range(y_1, y_2):
+                        
+                        for i in range(x_1, x_2):
+                            all_pixels_in_class.append(j * image.width + i)
+
+
+                all_pixels_in_class = list(set(all_pixels_in_class))
+                all_pixels_in_class.sort()
+
+            pixel_classes[class_name] = all_pixels_in_class
+
+        return pixel_classes
 
 def _main(args):
     model_path = os.path.expanduser(args.model_path)
@@ -115,7 +148,10 @@ def _main(args):
         score_threshold=args.score_threshold,
         iou_threshold=args.iou_threshold)
 
+    all_images_file = open('all_images_test.csv','w')
+
     for image_file in os.listdir(test_path):
+        print('IMAGE_FILE: {}'.format(image_file))
         try:
             image_type = imghdr.what(os.path.join(test_path, image_file))
             if not image_type:
@@ -135,6 +171,7 @@ def _main(args):
                               image.height - (image.height % 32))
             resized_image = image.resize(new_image_size, Image.BICUBIC)
             image_data = np.array(resized_image, dtype='float32')
+
             print(image_data.shape)
 
         image_data /= 255.
@@ -154,7 +191,12 @@ def _main(args):
             size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness = (image.size[0] + image.size[1]) // 300
 
+        # all boxes and classes for an image
+        image_boxes = []
+
+
         for i, c in reversed(list(enumerate(out_classes))):
+
             predicted_class = class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
@@ -170,6 +212,9 @@ def _main(args):
             bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
             print(label, (left, top), (right, bottom))
+
+            image_boxes.append([label, (left, top), (right, bottom)])
+
 
             if top - label_size[1] >= 0:
                 text_origin = np.array([left, top - label_size[1]])
@@ -188,7 +233,53 @@ def _main(args):
             del draw
 
         image.save(os.path.join(output_path, image_file), quality=90)
+
+
+        output_file = open('output_annotations/test_output_{}_.csv'.format(image_file), 'w')
+
+        for class_name, class_values in get_pixels_for_each_class(image_boxes, image).items():
+
+            if class_values:
+
+                pixel_pairs = {}
+                counter = class_values[0]
+                current_distance = 0
+
+                for i in range(len(class_values) -1 ):
+
+                    if(class_values[i] + 1 == class_values[i+1]):
+                        current_distance += 1
+                        pixel_pairs[counter] = current_distance
+                    else:
+                        counter = class_values[i]
+                        current_distance = 0
+
+                final_array = []
+
+                for key, value in pixel_pairs.items():
+                    final_array.append(key)
+                    final_array.append(value)
+
+                positions_string = ""
+
+                for item in final_array:
+                    positions_string += str(item) + " "
+
+                class_line = "{}_{}, {} \n".format(image_file, class_name, positions_string)
+                print(class_name)
+                #print(class_line)
+                output_file.write(class_line)
+                all_images_file.write(class_line)
+            else:
+                class_line = "{}_{},1 0 \n".format(image_file, class_name)
+                #print(class_line)
+                output_file.write(class_line)
+                all_images_file.write(class_line)
+
+        output_file.close()
     sess.close()
+
+    all_images_file.close()
 
 
 if __name__ == '__main__':
